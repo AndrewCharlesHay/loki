@@ -75,6 +75,7 @@ type DataObjTee struct {
 	// Metrics.
 	streams         prometheus.Counter
 	streamFailures  prometheus.Counter
+	estimatedBytes  *prometheus.GaugeVec
 	producedBytes   *prometheus.CounterVec
 	producedRecords *prometheus.CounterVec
 }
@@ -104,6 +105,10 @@ func NewDataObjTee(
 			Name: "loki_distributor_dataobj_tee_duplicate_stream_failures_total",
 			Help: "Total number of streams that could not be duplicated.",
 		}),
+		estimatedBytes: promauto.With(r).NewGaugeVec(prometheus.GaugeOpts{
+			Name: "loki_distributor_dataobj_tee_estimated_bytes_total",
+			Help: "Total number of bytes estimated to be produced to each partition.",
+		}, []string{"tenant", "segmentation_key"}),
 		// The tenant and segmentation key labels are not emitted unless debug metrics
 		// are enabled.
 		producedBytes: promauto.With(r).NewCounterVec(prometheus.CounterOpts{
@@ -194,6 +199,9 @@ func (t *DataObjTee) Duplicate(ctx context.Context, tenant string, streams []Key
 
 func (t *DataObjTee) duplicate(ctx context.Context, tenant string, stream segmentedStream, rateBytes, tenantRateBytes uint64, pushTracker *PushTracker) {
 	t.streams.Inc()
+	if t.cfg.DebugMetricsEnabled {
+		t.estimatedBytes.WithLabelValues(tenant, string(stream.SegmentationKey)).Set(float64(rateBytes))
+	}
 
 	partition, err := t.resolver.Resolve(ctx, tenant, stream.SegmentationKey, stream.HashKey, rateBytes, tenantRateBytes)
 	if err != nil {
