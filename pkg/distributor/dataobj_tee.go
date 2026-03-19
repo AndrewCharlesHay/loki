@@ -199,6 +199,29 @@ func (t *DataObjTee) Duplicate(ctx context.Context, tenant string, streams []Key
 
 func (t *DataObjTee) duplicate(ctx context.Context, tenant string, stream segmentedStream, rateBytes, tenantRateBytes uint64, pushTracker *PushTracker) {
 	t.streams.Inc()
+
+	// Round rateBytes to predefined buckets to reduce partition churn.
+	const (
+		_128KB = 128 << 10
+		_1MB   = 1 << 20
+		_3MB   = 3 << 20
+		_5MB   = 5 << 20
+		_10MB  = 10 << 20
+	)
+	switch {
+	case rateBytes <= _128KB:
+		rateBytes = _128KB
+	case rateBytes <= _1MB:
+		rateBytes = _1MB
+	case rateBytes <= _3MB:
+		rateBytes = _3MB
+	case rateBytes <= _5MB:
+		rateBytes = _5MB
+	default:
+		// Round up to the next whole 10MB.
+		rateBytes = ((rateBytes + _10MB - 1) / _10MB) * _10MB
+	}
+
 	if t.cfg.DebugMetricsEnabled {
 		t.estimatedBytes.WithLabelValues(tenant, string(stream.SegmentationKey)).Set(float64(rateBytes))
 	}
