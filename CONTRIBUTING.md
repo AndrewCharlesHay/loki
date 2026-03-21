@@ -117,7 +117,7 @@ Before marking a PR as ready for review:
    - HTTP or gRPC API endpoints
    - Any other change requiring operator attention during an upgrade
 6. **Deprecated/deleted config**: If a configuration option is deprecated or removed, update `tools/deprecated-config-checker/deprecated-config.yaml` or `deleted-config.yaml` respectively ([example PR](https://github.com/grafana/loki/pull/10840/commits/0d4416a4b03739583349934b96f272fb4f685d15)).
-7. **Documentation** is added or updated for any user-visible change.
+7. **Documentation** is added or updated for any user-visible change, and follows the [Grafana Writers' Toolkit](https://grafana.com/docs/writers-toolkit/write/).
 
 **Note:** A maintainer must approve and trigger CI for community contributions.
 
